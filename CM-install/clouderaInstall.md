@@ -353,6 +353,34 @@ On each cluster host:
 sudo mkdir -p /opt/cloudera/parcels
 sudo chown cloudera-scm:cloudera-scm /opt/cloudera/parcels
 ```
+
+***Install the Cloudera Manager Server and Agents***
+Tarballs contain both the Cloudera Manager Server and Cloudera Manager Agent in a single file. Copy the tarballs and unpack them on all hosts on which you intend to install Cloudera Manager Server and Cloudera Manager Agents.
+```shell
+sudo tar -xzf cloudera-manager*.tar.gz -C /opt #cm-5.6.0 directory
+```
+***Install MYSQL database for CM***
+Download JDBC driver and put mysql-connector-java-5.1.38-bin.jar to /opt/cm-5.6.0/share/cmf/lib/.
+
+***Initialize CM database***
+```shell
+cp mysql-connector-java-5.1.38/mysql-connector-java-5.1.38 /opt/cm-5.6.0/share/cmf/lib/
+/opt/cm-5.6.0/share/cmf/schema/scm_prepare_database.sh mysql cm -hlocalhost -uroot -pfeelwx --scm-host localhost scm scm scm
+# 格式是:scm_prepare_database.sh 数据库类型 数据库 服务器 用户名 密码 –scm-host Cloudera_Manager_Server所在的机器
+```
+***Download CDH parels for installation***
+```shell
+cp CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha1 manifest.json /opt/cloudera/parcel-repo/
+mv CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha1 CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha # or CM will download CDH parcels again
+```
+Configure **/opt/cm-5.6.0/etc/cloudera-scm-agent/config.ini** == > set #server_host=server003 (CM server hostname) <br>
+Copy this configuration file to other nodes and then start server and agent service: <br>
+```shell
+scp -r /opt/cm-5.6.0 server002:/opt/
+/opt/cm-5.6.0/etc/init.d/cloudera-scm-server start
+/opt/cm-5.6.0/etc/init.d/cloudera-scm-agent start
+```
+
 ***Start the Cloudera Manager Server*** <br>
 **Note: When you start the Cloudera Manager Server and Agents, Cloudera Manager assumes you are not already running HDFS and MapReduce. If these services are running: Shut down HDFS and MapReduce.**
 
@@ -405,32 +433,6 @@ sudo tarball_root/etc/init.d/cloudera-scm-agent start
 cp /opt/cm-5.6.0/etc/init.d/cloudera-scm-agent /etc/init.d/cloudera-scm-agent
 chkconfig cloudera-scm-agent on
 ```
-***Install the Cloudera Manager Server and Agents***
-Tarballs contain both the Cloudera Manager Server and Cloudera Manager Agent in a single file. Copy the tarballs and unpack them on all hosts on which you intend to install Cloudera Manager Server and Cloudera Manager Agents.
-```shell
-sudo tar -xzf cloudera-manager*.tar.gz -C /opt #cm-5.6.0 directory
-```
-***Install MYSQL database for CM***
-Download JDBC driver and put mysql-connector-java-5.1.38-bin.jar to /opt/cm-5.6.0/share/cmf/lib/.
-
-***Initialize CM database***
-```shell
-cp mysql-connector-java-5.1.38/mysql-connector-java-5.1.38 /opt/cm-5.6.0/share/cmf/lib/
-/opt/cm-5.6.0/share/cmf/schema/scm_prepare_database.sh mysql cm -hlocalhost -uroot -pfeelwx --scm-host localhost scm scm scm
-# 格式是:scm_prepare_database.sh 数据库类型 数据库 服务器 用户名 密码 –scm-host Cloudera_Manager_Server所在的机器
-```
-***Download CDH parels for installation***
-```shell
-cp CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha1 manifest.json /opt/cloudera/parcel-repo/
-mv CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha1 CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha # or CM will download CDH parcels again
-```
-Configure **/opt/cm-5.6.0/etc/cloudera-scm-agent/config.ini** == > set #server_host=server003 (CM server hostname) <br>
-Copy this configuration file to other nodes and then start server and agent service: <br>
-```shell
-scp -r /opt/cm-5.6.0 server002:/opt/
-/opt/cm-5.6.0/etc/init.d/cloudera-scm-server start
-/opt/cm-5.6.0/etc/init.d/cloudera-scm-agent start
-```
 
 #### Y strategy
 To use this method, server, and cluster hosts must satisfy the following requirements:
@@ -477,14 +479,14 @@ To enable Cloudera Manager to automatically discover hosts on which to install C
   - To specify the Parcel Directory or Local Parcel Repository Path, add a parcel repository: Parcel Directory and Local Parcel Repository Path - Specify the location of parcels on cluster hosts and the Cloudera Manager Server host.
   - Click OK. Parcels available from the configured remote parcel repository URLs are displayed in the parcels list. If you specify a URL for a parcel version too new to be supported by the Cloudera Manager version, the parcel is not displayed in the parcel list.
 
-2. If you are using Cloudera Manager to install software, select the release of Cloudera Manager Agent. You can choose either the version that matches the Cloudera Manager Server you are currently using or specify a version in a custom repository. If you opted to use custom repositories for installation files, you can provide a GPG key URL that applies for all repositories.
+  - If you are using Cloudera Manager to install software, select the release of Cloudera Manager Agent. You can choose either the version that matches the Cloudera Manager Server you are currently using or specify a version in a custom repository. If you opted to use custom repositories for installation files, you can provide a GPG key URL that applies for all repositories.
 
-3. Select Install Oracle Java SE Development Kit (JDK) to allow Cloudera Manager to install the JDK on each cluster host. If you have already installed the JDK, do not select this option.
+2. Select Install Oracle Java SE Development Kit (JDK) to allow Cloudera Manager to install the JDK on each cluster host. If you have already installed the JDK, do not select this option.
 
-4. Specify host installation properties:
+3. Specify host installation properties:
 Select root or enter the username for an account that has password-less sudo permission. --> root & feelwx
 
-5.  Cloudera Manager performs the following:
+4.  Cloudera Manager performs the following:
 Parcels - installs the Oracle JDK and the Cloudera Manager Agent packages and starts the Agent. Click Continue. During parcel installation, progress is indicated for the phases of the parcel installation process in separate progress bars. If you are installing multiple parcels, you see progress bars for each parcel. When the Continue button at the bottom of the screen turns blue, the installation process is completed.
 
 **Potential Error: if one node is in bad health (red alert), check the /var/log/cloudera-scm-agent/cloudera-scm-agent.log file for error information (heartbeat log file)**
