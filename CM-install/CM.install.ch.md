@@ -527,3 +527,148 @@ Hue is a graphical user interface that allows you to interact with your clusters
 - Click the Hue Web UI link, which opens Hue in a new window.
 - Log in with the credentials, username: hdfs, password: hdfs.
 - Choose an application in the navigation bar at the top of the browser window.
+
+***安装 flume (所有节点)*** <br>
+1. 导入cdh5库用于flume安装 (http://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/cloudera-cdh5.repo)
+```shell
+cd /etc/yum.repos.d #yum安装库目录
+wget http://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/cloudera-cdh5.repo
+```
+
+2. 使用packages发安装
+```shell
+sudo yum install flume-ng
+sudo yum install flume-ng-agent
+sudo yum install flume-ng-doc
+```
+
+3. 配置flume
+```shell
+cp /etc/alternatives/flume-ng-conf/flume-conf.properties.template /etc/alternatives/flume-ng-conf/flume.conf
+cp /etc/alternatives/flume-ng-conf/flume-env.sh.template /etc/alternatives/flume-ng-conf/flume-env.sh
+```
+
+4. 测试安装是否成功
+```flume-ng help
+#should appear something like this:
+Usage: /usr/bin/flume-ng <command> [options]...
+
+commands:
+  help                  display this help text
+  agent                 run a Flume agent
+  avro-client           run an avro Flume client
+  version               show Flume version info
+
+global options:
+  --conf,-c <conf>      use configs in <conf> directory
+  --classpath,-C <cp>   append to the classpath
+  --dryrun,-d           do not actually start Flume, just print the command
+  --Dproperty=value     sets a JDK system property value
+
+agent options:
+  --conf-file,-f <file> specify a config file (required)
+  --name,-n <name>      the name of this agent (required)
+  --help,-h             display help text
+
+avro-client options:
+  --rpcProps,-P <file>  RPC client properties file with server connection params
+  --host,-H <host>      hostname to which events will be sent (required)
+  --port,-p <port>      port of the avro source (required)
+  --dirname <dir>       directory to stream to avro source
+  --filename,-F <file>  text file to stream to avro source [default: std input]
+  --headerFile,-R <file> headerFile containing headers as key/value pairs on each new line
+  --help,-h             display help text
+
+  Either --rpcProps or both --host and --port must be specified.
+
+Note that if <conf> directory is specified, then it is always included first
+in the classpath.
+```
+
+5. 运行flume
+```shell
+sudo service flume-ng-agent start
+or
+/usr/bin/flume-ng agent -c <config-dir> -f <config-file> -n <agent-name>
+# /usr/bin/flume-ng agent -c /etc/flume-ng/conf -f /etc/flume-ng/conf/flume.conf -n agent
+```
+
+6. 测试
+- 设置一个exmaple.conf配置文件:
+  ```shell
+  vi example.conf
+  # example.conf: A single-node Flume configuration
+
+  # Name the components on this agent
+  a1.sources = r1
+  a1.sinks = k1
+  a1.channels = c1
+
+  # Describe/configure the source
+  a1.sources.r1.type = netcat
+  a1.sources.r1.bind = localhost
+  a1.sources.r1.port = 44444
+
+  # Describe the sink
+  a1.sinks.k1.type = logger
+
+  #  Use a channel which buffers events in memory
+  a1.channels.c1.type = memory
+  a1.channels.c1.capacity = 1000
+  a1.channels.c1.transactionCapacity = 100
+
+  # Bind the source and sink to the channel
+  a1.sources.r1.channels = c1
+  a1.sinks.k1.channel = c1
+  ```
+
+- 运行flume
+```shell
+bin/flume-ng agent --conf conf --conf-file example.conf --name a1 -Dflume.root.logger=INFO,console
+```
+
+- 打开另一个终端输入 ```telnet localhost 44444```， 并按一下操作观察结果
+ ```shell
+ Trying 127.0.0.1...
+ Connected to localhost.localdomain (127.0.0.1).
+ Escape character is '^]'.
+ Hello world! <ENTER>
+ OK
+ ```
+ 如果安装成功在flume运行终端应该能观察到以下输出：
+ ```shell
+ 12/06/19 15:32:19 INFO source.NetcatSource: Source starting
+ 12/06/19 15:32:19 INFO source.NetcatSource: Created serverSocket:sun.nio.ch.ServerSocketChannelImpl[/127.0.0.1:44444]
+ 12/06/19 15:32:34 INFO sink.LoggerSink: Event: { headers:{} body: 48 65 6C 6C 6F 20 77 6F 72 6C 64 21 0D          Hello world!. }
+ ```
+**Note: flume 日志文件储存的文件夹在 /var/log/flume-ng**
+
+
+***安装 Kafka (所有节点)***<br>
+- 选择安装版本. 此处我们选择0.8.2.0+kafka1.4.0+127。
+```shell
+cd /etc/yum.repos.d
+wget http://archive.cloudera.com/kafka/redhat/6/x86_64/kafka/cloudera-kafka.repo
+```
+
+- package法安装
+```shell
+sudo yum clean all
+sudo yum install kafka
+sudo yum install kafka-server
+```
+- 配置文件 /etc/kafka/conf/server.properties
+确保每个节点的broker.id再集群上是唯一的， zookeeper.connect 均指向同一个 ZooKeeper。
+此处我们设置zookeeper.connect指向server003:2181 (默认端口)
+
+- 运行Kafka
+```shell
+sudo service kafka-server start
+```
+
+- 确认是否每个节点均指向了同一个ZooKeeper
+```shell
+zookeeper-client
+ls /brokers/ids #see all of the IDs for the brokers you have registered in your Kafka cluster.
+get /brokers/ids/<ID> #discover to which node a particular ID is assigned
+```
