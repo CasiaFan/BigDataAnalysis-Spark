@@ -624,7 +624,7 @@ or
 
 - 运行flume
 ```shell
-bin/flume-ng agent --conf conf --conf-file example.conf --name a1 -Dflume.root.logger=INFO,console
+/bin/flume-ng agent --conf conf --conf-file example.conf --name a1 -Dflume.root.logger=INFO,console
 ```
 
 - 打开另一个终端输入 ```telnet localhost 44444```， 并按一下操作观察结果
