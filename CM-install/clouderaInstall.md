@@ -755,7 +755,7 @@ runuser -l  userNameHere -c '/path/to/command arg1 arg2'
 
 log file: <br>
 
-![error log](https://github.com/CasiaFan/BigDataAnalysis-Spark/blob/master/CM-install/CM%20issue/kafka-CM-install-error.java.outofmem%2Cserver.log.jpg)
+![error log](https://github.com/CasiaFan/BigDataAnalysis-Spark/blob/master/CM-install/CM%20issue/kafka-CM-install-error.jpg)
 
 Solution:
 Configure the java heaper size of broker:<br>
