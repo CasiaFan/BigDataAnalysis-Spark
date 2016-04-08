@@ -38,14 +38,15 @@ On Agent hosts each unpacked parcel requires about three times the space of the 
 **Python**<br>
 Cloudera Manager and CDH 4 require Python 2.4 or later, but Hue in CDH 5 and package installs of CDH 5 require Python 2.6 or 2.7.
 
-**Java**
-**Note: remove preinstalled openJDK and reinstall JDK 1.7.X or upper version for CDH 5.6.0 installation**<br>
+**JDK**
+**Note: remove preinstalled openJDK and reinstall JDK 1.7.X or upper version for CDH 5.6.0 installation [REF](http://www.cloudera.com/documentation/enterprise/5-6-x/topics/cm_ig_cm_requirements.html)**<br>
 ```shell
 rpm -qa | grep "java|jdk"
 #eg: rpm -e --nodeps java-1.5.0-gcj-1.5.0.0-29.1.el6.x86_64
 rpm -ivh jdk-7u79-linux-x64.rpm
 echo "JAVA_HOME=/usr/java/latest/" >> /etc/environment #add to global variable
 ```
+
 **Perl** <br>
 Cloudera Manager requires perl.
 
@@ -213,6 +214,8 @@ mv /var/lib/mysql/ib_logfile0 /var/lib/mysql/ib_logfile1 /var/lib/mysql/
 ## update mysql my.calcNormFactors
 vi /etc/my.cnf
 ```
+Input the following settings:
+
 ---
 ```
 [mysqld]
@@ -292,16 +295,17 @@ All done!
 ```
 ***Installing the MySQL JDBC Driver*** <br>
 Install the JDBC driver on the Cloudera Manager Server host, as well as hosts to which you assign the Activity Monitor, Reports Manager, Hive Metastore Server, Sentry Server, Cloudera Navigator Audit Server, and Cloudera Navigator Metadata Server roles.
+`cp mysql-connector-java-5.1.38-bin.jar /opt/cm-5.6.0/share/cmf/lib/`
 
 ---
 ### Installation of CM
 #### X strategy
 ***Create Users*** <br>
-The Cloudera Manager Server and managed services require a user account to complete tasks. When installing Cloudera Manager from tarballs, you **must create this user account on all hosts manually**. Because Cloudera Manager Server and managed services are configured to use the user account cloudera-scm by default, creating a user with this name is the simplest approach.
+The Cloudera Manager Server and managed services require a user account to complete tasks. When installing Cloudera Manager from tarballs, you **must create this user account on all hosts manually**. Because Cloudera Manager Server and managed services are configured to use the user account **cloudera-scm** by default, creating a user with this name is the simplest approach.
 `sudo useradd --system --home=/opt/cm-5.6.0/run/cloudera-scm-server --no-create-home --shell=/bin/false --comment "Cloudera SCM User" cloudera-scm`
 
 ***Create the Cloudera Manager Server Local Data Storage Directory*** <br>
-Create the following directory: /var/lib/cloudera-scm-server.<br> Change the owner of the directory so that the cloudera-scm user and group have ownership of the directory
+Create the following directory: /var/lib/cloudera-scm-server.<br> Change the owner of the directory so that the **cloudera-scm** user and group have ownership of the directory
 ```shell
 sudo mkdir /var/log/cloudera-scm-server
 sudo chown cloudera-scm:cloudera-scm /var/log/cloudera-scm-server
@@ -360,7 +364,7 @@ Tarballs contain both the Cloudera Manager Server and Cloudera Manager Agent in 
 `sudo tar -xzf cloudera-manager*.tar.gz -C /opt #cm-5.6.0 directory`
 
 ***Install MYSQL database for CM***
-Download JDBC driver and put mysql-connector-java-5.1.38-bin.jar to /opt/cm-5.6.0/share/cmf/lib/.
+Download JDBC driver and put `mysql-connector-java-5.1.38-bin.jar` to `/opt/cm-5.6.0/share/cmf/lib/`.
 
 ***Initialize CM database***
 ```shell
@@ -370,16 +374,12 @@ cp mysql-connector-java-5.1.38/mysql-connector-java-5.1.38 /opt/cm-5.6.0/share/c
 ```
 ***Download CDH parels for installation***
 ```shell
-cp CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha1 manifest.json /opt/cloudera/parcel-repo/
-mv CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha1 CDH-5.1.3-1.cdh5.1.3.p0.12-el6.parcel.sha # or CM will download CDH parcels again
+cp CDH-5.6.0-1.cdh5.6.0.p0.45-el5.parcel CDH-5.6.0-1.cdh5.6.0.p0.45-el5.parcel.sha1 manifest.json /opt/cloudera/parcel-repo/
+mv CDH-5.6.0-1.cdh5.6.0.p0.45-el5.parcel.sha1 CDH-5.6.0-1.cdh5.6.0.p0.45-el5.parcel.sha # or CM will download CDH parcels again
 ```
 Configure **/opt/cm-5.6.0/etc/cloudera-scm-agent/config.ini** == > set #server_host=server003 (CM server hostname) <br>
 Copy this configuration file to other nodes and then start server and agent service: <br>
-```shell
-scp -r /opt/cm-5.6.0 server002:/opt/
-/opt/cm-5.6.0/etc/init.d/cloudera-scm-server start
-/opt/cm-5.6.0/etc/init.d/cloudera-scm-agent start
-```
+`scp -r /opt/cm-5.6.0 server002:/opt/`
 
 ***Start the Cloudera Manager Server*** <br>
 **Note: When you start the Cloudera Manager Server and Agents, Cloudera Manager assumes you are not already running HDFS and MapReduce. If these services are running: Shut down HDFS and MapReduce.**
@@ -446,6 +446,8 @@ wget https://archive.cloudera.com/cm5/installer/latest/cloudera-manager-installe
 chmod u+x cloudera-manager-installer.bin
 sudo ./cloudera-manager-installer.bin
 ```
+
+---
 ***login in CM admin console* <br>***
 In a web browser, enter **http://Server host:7180** ([login](http://192.168.0.13:7180) or first modify **C:/Windows/System32/drivers/hosts** with 192.168.0.13 server003 then login in as server003:7180), where Server host is the fully qualified domain name or IP address of the host where the Cloudera Manager Server is running.
 
@@ -603,7 +605,10 @@ cp /etc/alternatives/flume-ng-conf/flume-env.sh.template /etc/alternatives/flume
 ```
 
 4. Verify installation
-```flume-ng help
+`flume-ng help`
+
+---
+```
 #should appear something like this:
 Usage: /usr/bin/flume-ng <command> [options]...
 
@@ -639,6 +644,7 @@ Note that if <conf> directory is specified, then it is always included first
 in the classpath.
 ```
 
+---
 5. Run flume
 ```shell
 sudo service flume-ng-agent start
@@ -707,7 +713,7 @@ In Cloudera Manager, download the Kafka parcel, distribute the parcel to the hos
 
 ![parcel install](https://github.com/CasiaFan/BigDataAnalysis-Spark/blob/master/CM-install/CM%20issue/CM.kafka-parcel-install.jpg)
 
-**B. Install parcels and add service in CM console.**<br>
+**B. Install packages and add service in CM console.**<br>
 - Select kafka version to be installed. Here we choose 0.8.2.0+kafka1.4.0+127
 ```shell
 cd /etc/yum.repos.d
@@ -738,7 +744,7 @@ get /brokers/ids/<ID> #discover to which node a particular ID is assigned
 ```
 
 ---
-### Sevral issues during CM console configuration
+### Several issues during CM console configuration
 **1. [Wrong Java version used in CDH:](http://stackoverflow.com/questions/28854722/how-to-change-the-version-of-java-that-cdh-uses)** <br>
 modify `/etc/default/bigtop-utils file`<br>
 `export JAVA_HOME=/usr/java/latest/ # export JAVA_HOME`
